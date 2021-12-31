@@ -9,7 +9,9 @@ def install_service0(conf_name, *args, **kwargs):
         conf_name,
         conf_local_filepath=kwargs.get("systemd-conf-file"),
         context={
-            "ExecStart": kwargs["ExecStart"],
+            "ExecStart": kwargs["ExecStart"]
+            if isinstance(kwargs["ExecStart"], str)
+            else " ".join(kwargs["ExecStart"]),
             "Environments": kwargs["Environments"],
             "WorkingDirectory": kwargs["WorkingDirectory"],
             "User": kwargs["User"],
