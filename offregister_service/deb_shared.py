@@ -1,3 +1,6 @@
+from operator import add
+from functools import partial
+
 from offregister_fab_utils.ubuntu.systemd import (
     install_upgrade_service,
     restart_systemd,
@@ -19,14 +22,22 @@ def install_service0(c, conf_name, *args, **kwargs):
     :type kwargs: ```TypedDict('ServiceKwargs', { 'ExecStart': str, 'Environments': str,
                                                   'WorkingDirectory': str, 'User': str,
                                                   'systemd-conf-file': Optional[str] })```
+
+    :return: `restart_systemd` output, i.e., res.stdout if res.exited == 0 else res.stderr
+    :rtype: ```str```
     """
     install_upgrade_service(
         c,
         conf_name,
         conf_local_filepath=kwargs.get("systemd-conf-file"),
         context={
-            "ExecStart": ensure_separated_str(kwargs["ExecStart"]),
-            "Environments": ensure_separated_str(kwargs["Environments"]),
+            "ExecStart": ensure_separated_str(kwargs["ExecStart"], " \\\n  "),
+            "Environments": ensure_separated_str(
+                map(partial(add, "Environment="), kwargs["Environments"])
+                if isinstance(kwargs["Environments"], (list, tuple))
+                else kwargs["Environments"],
+                "\n",
+            ),
             "WorkingDirectory": kwargs["WorkingDirectory"],
             "User": kwargs["User"],
             "Group": kwargs["Group"],
