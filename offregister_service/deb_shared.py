@@ -1,11 +1,27 @@
-from operator import add
-from functools import partial
-
 from offregister_fab_utils.ubuntu.systemd import (
     install_upgrade_service,
     restart_systemd,
 )
-from offutils import ensure_separated_str
+from offutils import ensure_separated_str, iteritems
+
+
+def add_to_environment(v):
+    """
+    Generate the `Environment=` row for the service file
+
+    :param v: Value
+    :type v: ```Union[str, dict]```
+
+    :return: `Environment=` row for the service file
+    :rtype: ```str```
+    """
+    return "Environment='{}'".format(
+        "\nEnvironment=".join(
+            "{}={}".format(k, "".join(map(str, v))) for k, v in iteritems(v)
+        )
+        if isinstance(v, dict)
+        else v
+    )
 
 
 def install_service0(c, conf_name, *args, **kwargs):
@@ -33,7 +49,7 @@ def install_service0(c, conf_name, *args, **kwargs):
         context={
             "ExecStart": ensure_separated_str(kwargs["ExecStart"], " \\\n  "),
             "Environments": ensure_separated_str(
-                map(partial(add, "Environment="), kwargs["Environments"])
+                map(add_to_environment, kwargs["Environments"])
                 if isinstance(kwargs["Environments"], (list, tuple))
                 else kwargs["Environments"],
                 "\n",
